@@ -1,0 +1,1179 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>草野球マッチ（仮称）プロトタイプ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F5F1; --surface:#FFFFFF; --ink:#14201B; --ink2:#3F4A45; --muted:#5A6460;
+  --line:#E1E4DE; --line2:#CBD0C8; --soft:#EEF0EC;
+  --navy:#183B5C; --navy-t:#E5ECF3;
+  --orange:#C2410C; --orange-t:#FCEBE2; --orange-ink:#9A3412;
+  --green:#1F6A35; --green-t:#E3F1E6;
+  --sun:#B42318; --sat:#1D5FA8;
+  --num:'Barlow Condensed','Noto Sans JP',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#E4E7E1;color:var(--ink);font-family:'Noto Sans JP',system-ui,-apple-system,'Hiragino Sans','Yu Gothic',sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font-family:inherit}
+button{cursor:pointer}
+button[disabled]{cursor:default}
+:focus-visible{outline:3px solid #7FA6CC;outline-offset:2px}
+.app{max-width:440px;margin:0 auto;min-height:100dvh;background:var(--bg);position:relative;padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+.app.no-tab{padding-bottom:28px}
+.grow{flex:1;min-width:0}
+.ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.center{text-align:center}
+.stack{display:flex;flex-direction:column;gap:10px}
+.pad{padding:16px}
+.h2{margin:0;font-size:15px;font-weight:900}
+.help{margin:0;font-size:12px;color:var(--muted);line-height:1.6}
+.lbl{font-size:13px;font-weight:700}
+.err{margin:0;font-size:12px;font-weight:700;color:var(--sun)}
+.req{font-size:11px;font-weight:700;color:var(--orange-ink);margin-left:6px}
+
+/* headers */
+.topbar{position:sticky;top:0;z-index:10;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:64px;padding:8px 12px 8px 20px}
+.topbar .sub{margin:0;font-size:11px;font-weight:500;color:var(--muted)}
+.topbar h1{margin:0;font-size:20px;font-weight:900;letter-spacing:.02em}
+.backbar{position:sticky;top:0;z-index:10;background:var(--bg);display:flex;align-items:center;gap:2px;height:56px;padding:0 16px 0 4px}
+.backbar h1{margin:0;font-size:17px;font-weight:700}
+h1:focus{outline:none}
+.iconbtn{width:44px;height:44px;border:0;background:transparent;border-radius:22px;display:grid;place-items:center;color:var(--ink)}
+.content{padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px}
+
+/* common parts */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lv-enjoy{background:var(--green-t);color:var(--green)}
+.lv-mid{background:var(--navy-t);color:var(--navy)}
+.lv-hard{background:var(--orange-t);color:var(--orange-ink)}
+.b-soft{background:var(--soft);color:var(--ink2)}
+.b-admin{background:var(--navy);color:#fff}
+.chip{padding:6px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:12px;font-weight:700;color:var(--ink2)}
+.pill-out{flex-shrink:0;height:44px;padding:0 14px 0 10px;border-radius:22px;border:1px solid var(--navy);background:#fff;color:var(--navy);font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.btn{width:100%;min-height:52px;border:0;border-radius:14px;font-size:16px;font-weight:900;letter-spacing:.03em;padding:0 16px}
+.btn-primary{background:var(--orange);color:#fff}
+.btn-navy{background:var(--navy);color:#fff}
+.btn-ghost{background:#fff;color:var(--ink2);border:1px solid var(--line2)}
+.btn[disabled]{background:#DADDD6;color:var(--ink2)}
+.btn-sm{width:auto;min-height:44px;padding:0 14px;border-radius:10px;font-size:13px;font-weight:700}
+.avatar{width:44px;height:44px;border-radius:22px;background:var(--navy-t);color:var(--navy);font-weight:900;font-size:18px;display:grid;place-items:center;flex-shrink:0}
+.avatar.lg{width:56px;height:56px;border-radius:28px;font-size:22px}
+
+/* calendar */
+.cal{margin:0 16px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:4px 10px 10px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;height:44px}
+.cal-title{display:flex;align-items:baseline;gap:2px;font-weight:700}
+.cal-title .n{font-family:var(--num);font-size:24px;line-height:1}
+.cal-title .u{font-size:13px;margin-right:4px}
+.cal-wd,.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal-wd{height:24px;align-items:center;text-align:center;font-size:11px;font-weight:700;color:var(--muted)}
+.cal-grid{row-gap:2px}
+.day{height:46px;border:0;background:transparent;padding:0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.day .num{width:30px;height:30px;border-radius:15px;display:grid;place-items:center;font-family:var(--num);font-size:17px;font-weight:700;color:var(--ink)}
+.day.sun .num{color:var(--sun)}
+.day.sat .num{color:var(--sat)}
+.day.past .num{color:#6B7470}
+.day.today .num{box-shadow:inset 0 0 0 1.5px var(--navy)}
+.day.sel .num{background:var(--navy);color:#fff;box-shadow:none}
+.day .cnt{height:12px;min-width:18px;padding:0 4px;border-radius:6px;background:var(--orange);color:#fff;font-size:10px;font-weight:700;line-height:12px;text-align:center}
+.day .cnt.mine{background:var(--navy)}
+.day .cnt.none{background:transparent}
+
+/* match list */
+.sechead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:16px 16px 8px 20px}
+.sechead h2{margin:0;font-size:16px;font-weight:900}
+.sechead p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.list{padding:0 16px 16px;display:flex;flex-direction:column;gap:10px}
+.mcard{display:flex;align-items:center;gap:12px;padding:14px 10px 14px 14px;background:#fff;border:1px solid var(--line);border-radius:14px;width:100%;text-align:left;color:var(--ink)}
+.mtime{width:52px;flex-shrink:0;display:flex;flex-direction:column}
+.mtime .s{font-family:var(--num);font-size:22px;font-weight:700;line-height:1}
+.mtime .e{margin-top:3px;font-size:11px;color:var(--muted)}
+.mrow{display:flex;align-items:center;gap:8px;min-width:0}
+.mname{font-size:15px;font-weight:700}
+.vs{flex-shrink:0;font-family:var(--num);font-size:15px;font-weight:700;color:var(--muted)}
+.q{width:26px;height:26px;flex-shrink:0;border-radius:13px;border:1.5px dashed var(--orange);color:var(--orange);font-size:14px;font-weight:900;display:grid;place-items:center}
+.meta{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+.empty{padding:28px 20px;background:#fff;border:1px dashed var(--line2);border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.empty b{font-size:14px}
+
+/* match detail */
+.hero{background:var(--navy);color:#fff;border-radius:20px;padding:18px 18px 20px;display:flex;flex-direction:column;gap:18px}
+.hero-top{display:flex;align-items:baseline;justify-content:space-between}
+.hero .date{font-family:var(--num);font-size:32px;font-weight:700;line-height:1}
+.hero .time{font-family:var(--num);font-size:22px;font-weight:600}
+.vsgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;justify-items:center}
+.vsgrid .side{display:flex;flex-direction:column;align-items:center;gap:8px}
+.emblem{width:60px;height:60px;border-radius:30px;background:#fff;color:var(--navy);font-size:24px;font-weight:900;display:grid;place-items:center}
+.emblem.qe{background:transparent;border:2px dashed #fff;color:#fff}
+.hero .tname{font-size:12px;font-weight:700;text-align:center;line-height:1.4}
+.hero .tname.muted{color:#C9D6E3}
+.bigvs{font-family:var(--num);font-size:36px;font-weight:700;letter-spacing:.04em;align-self:center;margin-top:-18px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.rows{padding:2px 16px}
+.row{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--soft)}
+.row:last-child{border-bottom:0}
+.row svg{flex-shrink:0;margin-top:2px;color:var(--navy)}
+.row .k{font-size:11px;font-weight:500;color:var(--muted)}
+.row .v{margin-top:2px;font-size:14px;font-weight:700}
+.row .ok{margin-top:2px;font-size:12px;font-weight:700;color:var(--green)}
+.quote{margin:0;font-size:14px;line-height:1.7}
+.status{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.okcircle{width:36px;height:36px;flex-shrink:0;border-radius:18px;background:var(--green-t);color:var(--green);display:grid;place-items:center}
+
+/* sukette */
+.toggle{display:flex;align-items:center;gap:10px;min-height:44px;border:0;background:transparent;padding:0;font-size:14px;font-weight:700;color:var(--ink);text-align:left}
+.track{width:44px;height:26px;border-radius:13px;background:#B9BFB6;position:relative;flex-shrink:0;transition:background .15s}
+.track::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:10px;background:#fff;transition:transform .15s}
+.toggle[aria-pressed="true"] .track{background:var(--navy)}
+.toggle[aria-pressed="true"] .track::after{transform:translateX(18px)}
+.filterbar{padding:0 20px 8px;display:flex;flex-direction:column;gap:2px}
+.rcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.rtop{display:flex;align-items:center;gap:12px}
+.rname{font-size:16px;font-weight:900}
+.rmeta{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:12px;color:var(--navy);font-weight:700}
+.rmeta .t{font-family:var(--num);font-size:16px}
+.rinfo{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)}
+.rbtns{display:flex;flex-wrap:wrap;gap:8px}
+.rbtn{min-height:44px;padding:0 10px 0 14px;border-radius:12px;border:0;background:var(--orange);color:#fff;font-size:14px;font-weight:900;display:inline-flex;align-items:center;gap:6px}
+.rbtn .fit{font-size:10px;font-weight:700;background:#fff;color:var(--orange-ink);border-radius:5px;padding:1px 5px}
+.rbtn.done{background:var(--green-t);color:var(--green);padding:0 14px}
+.rbtn.off{background:var(--soft);color:var(--muted);padding:0 14px}
+.rbtn.pub{background:var(--navy-t);color:var(--navy);padding:0 14px}
+
+/* apply */
+.recbanner{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:var(--orange-t);color:var(--orange-ink);font-size:15px}
+.recbanner b{font-size:18px;font-weight:900}
+.fitline{margin:0;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:700;line-height:1.5}
+.fitline.ok{background:var(--green-t);color:var(--green)}
+.fitline.warn{background:var(--orange-t);color:var(--orange-ink)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+.check{display:flex;align-items:flex-start;gap:10px;min-height:44px;font-size:13px;line-height:1.5;padding-top:10px}
+.check input{width:20px;height:20px;margin:0;flex-shrink:0;accent-color:var(--navy)}
+
+/* field */
+.field{position:relative;width:100%;aspect-ratio:10/9;border-radius:18px;overflow:hidden;background:#3F7D50}
+.field svg{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.pos{position:absolute;transform:translate(-50%,-50%);width:clamp(52px,17%,64px);height:46px;border-radius:12px;border:1px solid rgba(255,255,255,.95);background:rgba(255,255,255,.93);color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.pos b{font-size:14px;font-weight:900;line-height:1.2;color:var(--ink)}
+.pos small{font-size:10px;font-weight:700;line-height:1.2;min-height:12px}
+.pos.sel{background:var(--navy);border:2px solid #fff;color:#fff}
+.pos.sel b{color:#fff}
+.pos.rec{background:#fff;border:2.5px dashed var(--orange)}
+.pos.rec small{color:var(--orange-ink)}
+.pos.rec.sel{background:var(--orange);border:2px solid #fff}
+.pos.rec.sel small,.pos.rec.sel b{color:#fff}
+.pos.post{background:var(--orange);border:2px solid #fff;color:#fff}
+.pos.post b{color:#fff}
+.pos.rec:not(.sel){animation:pulse 1.6s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(194,65,12,.6)}100%{box-shadow:0 0 0 12px rgba(194,65,12,0)}}
+@media (prefers-reduced-motion:reduce){.pos.rec:not(.sel){animation:none}}
+@media (max-width:359px){
+  .field{aspect-ratio:1/1}
+  .pos{width:48px;height:44px}
+  .pos b{font-size:13px}
+  .pad{padding:14px}
+}
+.field.mini{width:112px;flex-shrink:0;border-radius:12px;aspect-ratio:10/9}
+.dot{position:absolute;transform:translate(-50%,-50%);width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.85)}
+.dot.on{width:13px;height:13px;background:var(--navy);border:2px solid #fff}
+.dot.rec{width:13px;height:13px;background:var(--orange);border:2px solid #fff}
+.selsum{margin:0;font-size:13px;color:var(--muted)}
+.selsum b{color:var(--ink)}
+
+/* form */
+.inp{width:100%;height:48px;border-radius:12px;border:1px solid var(--line2);background:#fff;padding:0 12px;font-size:16px;color:var(--ink)}
+textarea.inp{height:auto;padding:12px;line-height:1.6;resize:none}
+.inp.bad{border-color:var(--sun);box-shadow:0 0 0 1px var(--sun)}
+.seg{display:grid;gap:6px}
+.seg button{min-height:44px;border-radius:10px;border:1px solid var(--line2);background:#fff;font-size:13px;font-weight:700;color:var(--ink2);padding:0 4px}
+.seg button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.rolecard{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:14px;border:1.5px solid var(--line2);background:#fff;cursor:pointer}
+.rolecard.on{border-color:var(--navy);box-shadow:0 0 0 1px var(--navy)}
+.rolecard input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--navy);flex-shrink:0}
+.rolecard b{display:block;font-size:15px}
+.rolecard span{display:block;margin-top:4px;font-size:12px;color:var(--muted);line-height:1.6}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.field-group{display:flex;flex-direction:column;gap:6px}
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 6px 6px 16px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.stepper .ctl{display:flex;align-items:center;gap:4px}
+.stepper button{width:44px;height:44px;border:1px solid var(--line2);border-radius:12px;background:#fff;color:var(--ink);display:grid;place-items:center}
+.stepper output{min-width:44px;text-align:center;font-size:15px;font-weight:700}
+.summary{padding:12px 14px;border-radius:12px;background:var(--navy-t);color:var(--navy);font-size:14px;font-weight:700}
+
+/* onboarding */
+.ob-hero{padding:32px 20px 8px}
+.ob-logo{width:52px;height:52px;border-radius:16px;background:var(--navy);color:#fff;display:grid;place-items:center}
+.ob-app{margin:14px 0 2px;font-size:12px;font-weight:700;color:var(--muted)}
+.ob-hero h1{margin:0;font-size:26px;font-weight:900}
+.ob-lead{margin:8px 0 0;font-size:13px;color:var(--muted);line-height:1.7}
+
+/* mypage / team */
+.unlock{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.unlock li{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14px;border-bottom:1px solid var(--soft)}
+.unlock li:last-child{border-bottom:0}
+.unlock .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;flex-shrink:0}
+.unlock .lk{background:var(--soft);color:var(--muted)}
+.unlock .ok{background:var(--green-t);color:var(--green)}
+.menu{display:flex;flex-direction:column;gap:10px}
+.menuitem{display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border:1px solid var(--line);border-radius:14px;width:100%;text-align:left;color:var(--ink)}
+.menuitem .mi{width:40px;height:40px;border-radius:12px;background:var(--navy-t);color:var(--navy);display:grid;place-items:center;flex-shrink:0}
+.menuitem b{display:block;font-size:15px}
+.menuitem span.d{display:block;margin-top:2px;font-size:12px;color:var(--muted)}
+.count{min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--orange);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.teamhero{background:var(--navy);color:#fff;border-radius:20px;padding:18px;display:flex;align-items:center;gap:14px}
+.teamhero .emblem{width:56px;height:56px;border-radius:28px;font-size:22px}
+.teamhero .n{font-size:18px;font-weight:900}
+.teamhero .s{margin-top:4px;font-size:12px;color:#C9D6E3}
+.simple{list-style:none;margin:0;padding:0 16px}
+.simple li{padding:12px 0;border-bottom:1px solid var(--soft);font-size:13px;line-height:1.6}
+.simple li:last-child{border-bottom:0}
+.simple .tag{display:inline-block;margin-right:6px}
+.sectitle{margin:6px 4px 0;font-size:13px;font-weight:700;color:var(--muted)}
+.req-actions{display:flex;gap:8px}
+
+/* tabbar, sheet, toast */
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,440px);height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#fff;border-top:1px solid var(--line);display:grid;z-index:20}
+.tab{position:relative;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:10px;font-weight:700}
+.tab[aria-current="page"]{color:var(--navy)}
+.tab .new{position:absolute;top:7px;left:calc(50% + 6px);font-size:9px;font-weight:700;background:var(--orange);color:#fff;border-radius:6px;padding:0 4px;line-height:14px}
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(20,32,27,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:min(100%,440px);max-height:90dvh;overflow-y:auto;background:#fff;border-radius:22px 22px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;animation:up .2s ease-out}
+@keyframes up{from{transform:translateY(24px)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+.lockcircle{width:56px;height:56px;border-radius:28px;background:var(--orange-t);color:var(--orange-ink);display:grid;place-items:center;align-self:center}
+.sh-title{margin:0;font-size:18px;font-weight:900;line-height:1.5;text-align:center}
+.sh-body{margin:0;font-size:14px;line-height:1.7;color:var(--ink2);text-align:center}
+.matchup{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:900;font-size:15px;padding:12px;border-radius:12px;background:var(--navy-t);color:var(--navy);flex-wrap:wrap;text-align:center}
+.matchup .vs{color:var(--navy)}
+#toast-root{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom));z-index:40;width:min(calc(100% - 32px),408px);pointer-events:none}
+body.no-tab #toast-root{bottom:calc(24px + env(safe-area-inset-bottom))}
+.toast{background:#14201B;color:#fff;font-size:13px;font-weight:700;line-height:1.5;padding:12px 16px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.25);animation:up .2s ease-out}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="app" class="app"></div>
+<div id="sheet-root"></div>
+<div id="toast-root" role="status" aria-live="polite"></div>
+<noscript><p style="padding:20px">このプロトタイプはJavaScriptを有効にすると動きます。</p></noscript>
+
+<script>
+(function () {
+'use strict';
+
+/* ===== 基本データ ===== */
+var POS = {
+  P:   { s: '投手', l: '投手',   x: 50, y: 66 },
+  C:   { s: '捕手', l: '捕手',   x: 50, y: 90 },
+  '1B':{ s: '一塁', l: '一塁手', x: 76, y: 63 },
+  '2B':{ s: '二塁', l: '二塁手', x: 62, y: 44 },
+  SS:  { s: '遊撃', l: '遊撃手', x: 38, y: 44 },
+  '3B':{ s: '三塁', l: '三塁手', x: 24, y: 63 },
+  LF:  { s: '左翼', l: '左翼手', x: 18, y: 28 },
+  CF:  { s: '中堅', l: '中堅手', x: 50, y: 17 },
+  RF:  { s: '右翼', l: '右翼手', x: 82, y: 28 }
+};
+var KEYS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'];
+var LEVELS = ['はじめて', '少し', '経験者', '上級'];
+var TLEVELS = ['エンジョイ', '中級', 'ガチ'];
+var LVCLASS = { 'エンジョイ': 'lv-enjoy', '中級': 'lv-mid', 'ガチ': 'lv-hard' };
+var AREAS = ['広島市中区', '広島市東区', '広島市南区', '広島市西区', '広島市安佐南区', '広島市安佐北区', '広島市安芸区', '広島市佐伯区', 'その他'];
+var GROUNDS = ['中央公園グラウンド A面', '中央公園グラウンド B面', '河川敷第1グラウンド', '河川敷第2グラウンド', '市民球場（軟式）'];
+var TIMES = [['9:00', '11:00'], ['12:00', '14:00'], ['15:00', '17:00']];
+var WD = ['日', '月', '火', '水', '木', '金', '土'];
+
+var TEAMS = {
+  gion:    { name: '祇園クラッシャーズ', short: '祇', level: '中級',     games: 24, cancels: 0, comment: '30代中心で毎週日曜に活動しています。楽しく真剣にやれるチームさん大歓迎です！' },
+  danbara: { name: '段原フェニックス',   short: '段', level: '中級',     games: 31, cancels: 1, comment: '土日どちらも動けます。グラウンド確保はお任せください。' },
+  nishi:   { name: '西区ドリーマーズ',   short: '西', level: 'ガチ',     games: 45, cancels: 0, comment: '大会に向けて練習試合を組みたいです。経験者中心のチームさん歓迎。' },
+  ushita:  { name: '牛田シーガルズ',     short: '牛', level: '中級',     games: 18, cancels: 0, comment: '初対戦のチームさんも気軽にどうぞ。' },
+  koi:     { name: '己斐ウォーリアーズ', short: '己', level: 'エンジョイ', games: 12, cancels: 0, comment: '未経験者もいるゆるいチームです。笑って野球しましょう！' },
+  kabe:    { name: '可部スターズ',       short: '可', level: 'エンジョイ', games: 9,  cancels: 0, comment: '家族で見に来るメンバーも多い、にぎやかなチームです。' },
+  itsuka:  { name: '五日市ベイズ',       short: '五', level: 'ガチ',     games: 52, cancels: 0, comment: '審判ありの本格的な試合を希望します。' },
+  yaguchi: { name: '矢口クローバーズ',   short: '矢', level: '中級',     games: 21, cancels: 2, comment: '平日夜のナイターもできます。' }
+};
+var TEAM_IDS = Object.keys(TEAMS);
+
+/* ===== 日付 ===== */
+function pad(n) { return (n < 10 ? '0' : '') + n; }
+function dkey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function parse(k) { var a = k.split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); }
+function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+var now = new Date();
+var today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+var TODAY = dkey(today0);
+function fmtMD(k) { var d = parse(k); return (d.getMonth() + 1) + '月' + d.getDate() + '日（' + WD[d.getDay()] + '）'; }
+function fmtShort(k) { var d = parse(k); return (d.getMonth() + 1) + '/' + d.getDate() + '（' + WD[d.getDay()] + '）'; }
+
+var WEEKENDS = [];
+for (var i = 0; i <= 63; i++) {
+  var dd = addDays(today0, i);
+  if (dd.getDay() === 0 || dd.getDay() === 6) WEEKENDS.push(dkey(dd));
+}
+
+/* 対戦相手募集（デモデータ：今日から先の土日に自動で並べる） */
+var MATCHES = [];
+(function () {
+  var t = 0;
+  WEEKENDS.forEach(function (k, i) {
+    var n = [3, 2, 1, 2, 3, 2][i % 6];
+    for (var j = 0; j < n; j++) {
+      var tid = TEAM_IDS[t % TEAM_IDS.length]; t++;
+      var g = ((i + j) % 5 === 4) ? null : GROUNDS[(i + j) % GROUNDS.length];
+      MATCHES.push({ id: 'm' + MATCHES.length, date: k, start: TIMES[j][0], end: TIMES[j][1], team: tid, ground: g });
+    }
+  });
+})();
+
+/* 助っ人募集（デモデータ） */
+var RECRUITS = [
+  { team: 'ushita',  pos: ['SS', '1B'],       any: 0, fee: '500円',   ground: '河川敷第2グラウンド', time: '13:00〜15:00' },
+  { team: 'danbara', pos: ['3B', 'RF'],       any: 0, fee: '無料',    ground: '中央公園グラウンド B面', time: '9:00〜11:00' },
+  { team: 'gion',    pos: ['C'],              any: 0, fee: '500円',   ground: '中央公園グラウンド A面', time: '9:00〜11:00' },
+  { team: 'nishi',   pos: ['P', 'SS'],        any: 0, fee: '1,000円', ground: '市民球場（軟式）', time: '15:00〜17:00' },
+  { team: 'koi',     pos: ['2B', 'LF', 'CF'], any: 0, fee: '無料',    ground: '河川敷第1グラウンド', time: '12:00〜14:00' },
+  { team: 'kabe',    pos: ['1B'],             any: 1, fee: '無料',    ground: '中央公園グラウンド B面', time: '10:00〜12:00' },
+  { team: 'itsuka',  pos: ['SS'],             any: 0, fee: '1,000円', ground: '市民球場（軟式）', time: '13:00〜15:00' },
+  { team: 'yaguchi', pos: ['CF', 'RF'],       any: 0, fee: '500円',   ground: '河川敷第2グラウンド', time: '9:00〜11:00' }
+].map(function (r, i) {
+  r.id = 'r' + i;
+  r.date = WEEKENDS[Math.min(i, WEEKENDS.length - 1)];
+  return r;
+});
+
+/* ===== 状態 ===== */
+var S;
+function initState() {
+  var first = WEEKENDS[0];
+  var fd = parse(first);
+  return {
+    screen: 'onboard', history: [], top: true,
+    user: { name: '', positions: new Set(), level: '経験者' },
+    admin: null,
+    cal: { y: fd.getFullYear(), m: fd.getMonth() },
+    selDate: first,
+    matchId: null,
+    appliedM: {}, appliedR: {},
+    onlyMine: false,
+    myMatches: [], myRecruits: [],
+    teamNew: false,
+    sheet: null, returnTo: null,
+    ob: { name: '', sel: new Set(), level: '経験者', role: 'player', teamName: '', area: '広島市西区', tlevel: '中級', err: {} },
+    ad: null, ap: null, pe: null, pm: null, ps: null,
+    cm: { msg: '' },
+    requests: [
+      { id: 'q1', name: 'しょうた', pos: 'SS', can: ['SS', '2B'], level: '経験者', note: '高校まで軟式をやっていました！', status: 'pending' },
+      { id: 'q2', name: 'ゆうき', pos: '1B', can: ['1B', 'LF', 'RF'], level: '少し', note: '', status: 'pending' }
+    ],
+    toast: null
+  };
+}
+
+/* ===== ユーティリティ ===== */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+var ICON = {
+  back: '<path d="M15 18l-6-6 6-6"/>',
+  chevL: '<path d="M15 18l-6-6 6-6"/>',
+  chevR: '<path d="M9 18l6-6-6-6"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  userPlus: '<circle cx="9" cy="7" r="4"/><path d="M2 21v-1a7 7 0 0 1 14 0v1"/><path d="M19 8v6M16 11h6"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  minus: '<path d="M5 12h14"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  yen: '<path d="M6 3l6 8 6-8M12 11v10M7 13h10M7 17h10"/>',
+  ball: '<circle cx="12" cy="12" r="9"/><path d="M5.6 6.3c2.3 2 2.3 9.4 0 11.4M18.4 6.3c-2.3 2-2.3 9.4 0 11.4"/>',
+  check: '<path d="M20 6L9 17l-5-5"/>',
+  lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  inbox: '<path d="M3 13h5l2 3h4l2-3h5"/><path d="M5 5h14l2 8v6H3v-6z"/>',
+  swords: '<path d="M4 4l9 9M20 4l-9 9M7 17l-3 3M17 17l3 3M5 14l5 5M19 14l-5 5"/>'
+};
+function ic(name, size, sw) {
+  size = size || 20; sw = sw || 2;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + ICON[name] + '</svg>';
+}
+function posText(set) {
+  var a = KEYS.filter(function (k) { return set.has(k); }).map(function (k) { return POS[k].s; });
+  return a.length ? a.join('・') : '未登録';
+}
+function levelBadge(lv) { return '<span class="badge ' + LVCLASS[lv] + '">' + esc(lv) + '</span>'; }
+function isMineTeam(id) { return !!S.admin && (id === '__mine' || id === S.admin.teamId); }
+function teamOf(id) {
+  if (id === '__mine') {
+    var nm = S.admin ? S.admin.team : 'あなたのチーム';
+    return { name: nm, short: nm.charAt(0), level: S.admin ? S.admin.level : '中級', games: 0, cancels: 0, comment: '' };
+  }
+  return TEAMS[id];
+}
+function allMatches() { return MATCHES.concat(S.myMatches); }
+function findMatch(id) { return allMatches().filter(function (m) { return m.id === id; })[0]; }
+function matchesOn(k) {
+  return allMatches().filter(function (m) { return m.date === k; })
+    .sort(function (a, b) { return parseInt(a.start, 10) - parseInt(b.start, 10); });
+}
+function allRecruits() {
+  return S.myRecruits.concat(RECRUITS).slice().sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+}
+function findRecruit(id) { return allRecruits().filter(function (r) { return r.id === id; })[0]; }
+function who() {
+  if (S.admin) return esc(S.admin.team) + '・管理者';
+  return esc(S.user.name || 'ゲスト') + 'さん・個人';
+}
+
+/* 球場 */
+var FIELD_SVG =
+  '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">' +
+  '<rect width="100" height="100" fill="#3F7D50"/>' +
+  '<path d="M50 92 L2 44 C14 2 86 2 98 44 Z" fill="#5A9A68"/>' +
+  '<path d="M50 97 L80 67 Q50 22 20 67 Z" fill="#C99A6A"/>' +
+  '<path d="M50 86 L68 68 L50 50 L32 68 Z" fill="#5A9A68"/>' +
+  '<circle cx="50" cy="67" r="3.4" fill="#C99A6A"/>' +
+  '<path d="M50 90 L4 44 M50 90 L96 44" stroke="#fff" stroke-opacity=".75" stroke-width="1.2" fill="none" vector-effect="non-scaling-stroke"/>' +
+  '<rect x="70.8" y="66.8" width="2.4" height="2.4" fill="#fff" transform="rotate(45 72 68)"/>' +
+  '<rect x="48.8" y="44.8" width="2.4" height="2.4" fill="#fff" transform="rotate(45 50 46)"/>' +
+  '<rect x="26.8" y="66.8" width="2.4" height="2.4" fill="#fff" transform="rotate(45 28 68)"/>' +
+  '<path d="M48.6 89 L51.4 89 L51.4 90.4 L50 91.6 L48.6 90.4 Z" fill="#fff"/>' +
+  '</svg>';
+
+/* mode: 'can'（守れる位置を選ぶ） / 'post'（募集する位置を選ぶ） */
+function fieldHTML(ctx, sel, opt) {
+  opt = opt || {};
+  var mode = opt.mode || 'can';
+  var pills = KEYS.map(function (k) {
+    var p = POS[k], on = sel.has(k), rec = opt.rec === k;
+    var cls = 'pos', sub = '', aria;
+    if (mode === 'post') {
+      if (on) { cls += ' post'; sub = '募集する'; } else { sub = 'メンバー'; }
+      aria = p.s + 'を募集' + (on ? 'する' : 'しない');
+    } else {
+      if (on) cls += ' sel';
+      if (rec) cls += ' rec';
+      sub = rec ? '募集中' : (on ? '守れる' : '');
+      aria = p.s + '（' + (rec ? '募集中、' : '') + (on ? '守れる' : '未選択') + '）';
+    }
+    return '<button type="button" class="' + cls + '" style="left:' + p.x + '%;top:' + p.y + '%" data-act="togglePos" data-ctx="' + ctx + '" data-pos="' + k + '" aria-pressed="' + on + '" aria-label="' + aria + '"><b>' + p.s + '</b><small>' + sub + '</small></button>';
+  }).join('');
+  return '<div class="field" role="group" aria-label="野球場のポジション">' + FIELD_SVG + pills + '</div>';
+}
+function miniField(sel, rec) {
+  return '<div class="field mini" aria-hidden="true">' + FIELD_SVG + KEYS.map(function (k) {
+    var p = POS[k];
+    var cls = 'dot' + (rec === k ? ' rec' : (sel.has(k) ? ' on' : ''));
+    return '<span class="' + cls + '" style="left:' + p.x + '%;top:' + p.y + '%"></span>';
+  }).join('') + '</div>';
+}
+function segHTML(ctx, opts, val, label) {
+  return '<div class="seg" role="group" aria-label="' + esc(label) + '" style="grid-template-columns:repeat(' + opts.length + ',minmax(0,1fr))">' +
+    opts.map(function (o) {
+      return '<button type="button" data-act="seg" data-ctx="' + ctx + '" data-val="' + esc(o) + '" aria-pressed="' + (o === val) + '">' + esc(o) + '</button>';
+    }).join('') + '</div>';
+}
+function selectHTML(id, bind, options, val) {
+  return '<select id="' + id + '" class="inp" data-bind="' + bind + '">' + options.map(function (o) {
+    var v = typeof o === 'string' ? o : o.v, l = typeof o === 'string' ? o : o.l;
+    return '<option value="' + esc(v) + '"' + (v === val ? ' selected' : '') + '>' + esc(l) + '</option>';
+  }).join('') + '</select>';
+}
+function backbar(title) {
+  return '<header class="backbar"><button type="button" class="iconbtn" data-act="back" aria-label="戻る">' + ic('back', 24, 2.2) + '</button><h1 tabindex="-1">' + esc(title) + '</h1></header>';
+}
+
+/* ===== 画面：登録（はじめての人） ===== */
+function teamFields(prefix, d) {
+  var e = d.err || {};
+  return '' +
+    '<section class="card pad stack">' +
+      '<h2 class="h2">チームの情報</h2>' +
+      '<div class="field-group"><label class="lbl" for="' + prefix + '-tname">チーム名<span class="req">必須</span></label>' +
+      '<input id="' + prefix + '-tname" class="inp' + (e.teamName ? ' bad' : '') + '" data-bind="' + prefix + '.teamName" value="' + esc(d.teamName) + '" placeholder="例：横川モンキーズ" maxlength="20"' + (e.teamName ? ' aria-invalid="true" aria-describedby="' + prefix + '-tname-err"' : '') + '>' +
+      (e.teamName ? '<p class="err" id="' + prefix + '-tname-err">' + e.teamName + '</p>' : '') + '</div>' +
+      '<div class="field-group"><label class="lbl" for="' + prefix + '-area">活動エリア</label>' + selectHTML(prefix + '-area', prefix + '.area', AREAS, d.area) + '</div>' +
+      '<div class="field-group"><span class="lbl" id="' + prefix + '-tl">チームのレベル</span>' + segHTML(prefix + 't', TLEVELS, d.tlevel, 'チームのレベル') + '</div>' +
+    '</section>';
+}
+function roleCard(val, title, desc, cur) {
+  var on = cur === val;
+  return '<label class="rolecard' + (on ? ' on' : '') + '"><input type="radio" name="ob-role" value="' + val + '" data-bind="ob.role" data-rerender="1"' + (on ? ' checked' : '') + '><div><b>' + title + '</b><span>' + desc + '</span></div></label>';
+}
+function scrOnboard() {
+  var o = S.ob, e = o.err;
+  return '' +
+  '<header class="ob-hero">' +
+    '<div class="ob-logo">' + ic('ball', 28) + '</div>' +
+    '<p class="ob-app">草野球マッチ（仮称）</p>' +
+    '<h1 tabindex="-1">プロフィール登録</h1>' +
+    '<p class="ob-lead">試合のマッチングと、助っ人としての参戦がこのアプリひとつでできます。</p>' +
+  '</header>' +
+  '<div class="content">' +
+    '<section class="card pad stack">' +
+      '<label class="lbl" for="ob-name">ニックネーム<span class="req">必須</span></label>' +
+      '<input id="ob-name" class="inp' + (e.name ? ' bad' : '') + '" data-bind="ob.name" value="' + esc(o.name) + '" placeholder="例：たけし" autocomplete="nickname" maxlength="20"' + (e.name ? ' aria-invalid="true" aria-describedby="ob-name-err"' : '') + '>' +
+      (e.name ? '<p class="err" id="ob-name-err">' + e.name + '</p>' : '') +
+    '</section>' +
+    '<section class="card pad stack">' +
+      '<div><h2 class="h2">守れるポジション<span class="req">必須</span></h2><p class="help">球場のポジションをタップしてください。いくつでも選べます。</p></div>' +
+      fieldHTML('ob', o.sel) +
+      '<p class="selsum">選択中：<b>' + posText(o.sel) + '</b></p>' +
+      (e.pos ? '<p class="err" id="ob-pos-err">' + e.pos + '</p>' : '') +
+    '</section>' +
+    '<section class="card pad stack"><h2 class="h2">経験レベル</h2>' + segHTML('ob', LEVELS, o.level, '経験レベル') + '</section>' +
+    '<section class="stack" role="radiogroup" aria-labelledby="ob-role-t">' +
+      '<h2 class="h2" id="ob-role-t" style="margin:4px 4px 0">登録のしかた</h2>' +
+      roleCard('player', '個人として登録', '助っ人募集に応募できます。チーム管理者は、あとからマイページで追加できます。', o.role) +
+      roleCard('admin', 'チーム管理者としても登録', '個人の機能に加えて、対戦の申し込み・対戦相手の募集・助っ人の募集ができます。', o.role) +
+    '</section>' +
+    (o.role === 'admin' ? teamFields('ob', o) : '') +
+    '<button type="button" class="btn btn-primary" data-act="submitOnboard">登録してはじめる</button>' +
+  '</div>';
+}
+
+/* ===== 画面：試合を探す ===== */
+function calHTML() {
+  var y = S.cal.y, m = S.cal.m;
+  var first = new Date(y, m, 1), startDow = first.getDay(), days = new Date(y, m + 1, 0).getDate();
+  var minM = today0.getFullYear() * 12 + today0.getMonth(), curM = y * 12 + m;
+  var cells = '';
+  for (var b = 0; b < startDow; b++) cells += '<span class="day" aria-hidden="true"></span>';
+  for (var d = 1; d <= days; d++) {
+    var dt = new Date(y, m, d), k = dkey(dt), dow = dt.getDay();
+    var past = k < TODAY, list = past ? [] : matchesOn(k);
+    var hasMine = list.some(function (x) { return isMineTeam(x.team); });
+    var cls = 'day' + (dow === 0 ? ' sun' : dow === 6 ? ' sat' : '') + (past ? ' past' : '') + (k === TODAY ? ' today' : '') + (k === S.selDate ? ' sel' : '');
+    var aria = (m + 1) + '月' + d + '日（' + WD[dow] + '）' + (k === TODAY ? ' 今日' : '') + (list.length ? ' 募集' + list.length + '件' : '');
+    cells += '<button type="button" class="' + cls + '" data-act="pickDay" data-date="' + k + '" aria-label="' + aria + '" aria-pressed="' + (k === S.selDate) + '"' + (past ? ' disabled' : '') + '>' +
+      '<span class="num">' + d + '</span>' +
+      '<span class="cnt' + (list.length ? (hasMine ? ' mine' : '') : ' none') + '">' + (list.length || '') + '</span></button>';
+  }
+  return '' +
+  '<section class="cal" aria-label="カレンダー">' +
+    '<div class="cal-head">' +
+      '<button type="button" class="iconbtn" data-act="calMove" data-val="-1" aria-label="前の月"' + (curM <= minM ? ' disabled style="opacity:.3"' : '') + '>' + ic('chevL', 20, 2.2) + '</button>' +
+      '<div class="cal-title"><span class="n">' + y + '</span><span class="u">年</span><span class="n">' + (m + 1) + '</span><span class="u">月</span></div>' +
+      '<button type="button" class="iconbtn" data-act="calMove" data-val="1" aria-label="次の月"' + (curM >= minM + 2 ? ' disabled style="opacity:.3"' : '') + '>' + ic('chevR', 20, 2.2) + '</button>' +
+    '</div>' +
+    '<div class="cal-wd" aria-hidden="true"><span style="color:var(--sun)">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span style="color:var(--sat)">土</span></div>' +
+    '<div class="cal-grid">' + cells + '</div>' +
+  '</section>';
+}
+function matchCard(m) {
+  var t = teamOf(m.team), mine = isMineTeam(m.team);
+  return '<button type="button" class="mcard" data-act="openMatch" data-id="' + m.id + '">' +
+    '<div class="mtime"><span class="s">' + m.start + '</span><span class="e">〜' + m.end + '</span></div>' +
+    '<div class="grow stack" style="gap:6px">' +
+      '<div class="mrow"><span class="mname ellipsis">' + esc(t.name) + '</span><span class="vs">VS</span><span class="q" aria-label="対戦相手募集中">？</span></div>' +
+      '<div class="meta">' + ic('pin', 14) + '<span class="ellipsis">' + (m.ground ? esc(m.ground) + '・確保済み' : 'グラウンド未定（相談）') + '</span></div>' +
+      '<div style="display:flex;gap:6px">' + levelBadge(t.level) + (mine ? '<span class="badge b-admin">あなたのチーム</span>' : '') + '</div>' +
+    '</div>' +
+    '<span style="color:var(--muted);flex-shrink:0">' + ic('chevR', 20) + '</span>' +
+  '</button>';
+}
+function scrMatch() {
+  var list = matchesOn(S.selDate);
+  return '' +
+  '<header class="topbar"><div><p class="sub">' + who() + '</p><h1 tabindex="-1">試合を探す</h1></div>' +
+    '<button type="button" class="iconbtn" aria-label="お知らせ">' + ic('bell', 22) + '</button></header>' +
+  calHTML() +
+  '<div class="sechead"><div><h2>' + fmtMD(S.selDate) + '</h2><p>対戦相手を募集中のチーム ' + list.length + '件</p></div>' +
+    '<button type="button" class="pill-out" data-act="gate" data-what="対戦相手の募集" data-to="postMatch">' + ic('plus', 16, 2.4) + '募集する</button></div>' +
+  '<div class="list">' +
+    (list.length ? list.map(matchCard).join('') :
+      '<div class="empty"><b>この日の対戦相手募集はまだありません</b><p class="help">先に募集を出しておくと、空いているチームから申し込みが届きます。</p>' +
+      '<button type="button" class="btn btn-navy btn-sm" data-act="gate" data-what="対戦相手の募集" data-to="postMatch">この日に対戦相手を募集する</button></div>') +
+  '</div>';
+}
+
+/* ===== 画面：試合の詳細（どこ対どこ） ===== */
+function scrMatchDetail() {
+  var m = findMatch(S.matchId);
+  if (!m) return backbar('試合の詳細') + '<div class="content"><p>見つかりませんでした</p></div>';
+  var t = teamOf(m.team), d = parse(m.date), mine = isMineTeam(m.team), applied = !!S.appliedM[m.id];
+  var right = S.admin && !mine
+    ? '<div class="side"><span class="emblem">' + esc(S.admin.team.charAt(0)) + '</span><span class="tname">' + esc(S.admin.team) + '</span></div>'
+    : '<div class="side"><span class="emblem qe">？</span><span class="tname muted">' + (mine ? '対戦相手を募集中' : 'あなたのチーム') + '</span></div>';
+  var cta;
+  if (mine) {
+    cta = '<button type="button" class="btn" disabled>あなたのチームの募集です</button>';
+  } else if (applied) {
+    cta = '<div class="status" role="status"><span class="okcircle">' + ic('check', 20, 2.6) + '</span><div class="grow"><div style="font-size:14px;font-weight:700">申し込みました（承認待ち）</div><div class="help">相手チームが承認すると試合成立です</div></div>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-act="cancelMatch">取り消す</button></div>';
+  } else {
+    cta = '<p class="help center">相手チームが承認すると試合成立。成立後はチャットで連絡できます。</p>' +
+      '<button type="button" class="btn btn-primary" data-act="applyMatch">対戦を申し込む</button>';
+  }
+  return backbar('試合の詳細') +
+  '<div class="content">' +
+    '<section class="hero" aria-label="対戦カード">' +
+      '<div class="hero-top"><div><span class="date">' + (d.getMonth() + 1) + '.' + pad(d.getDate()) + '</span><span style="font-size:13px;font-weight:700">（' + WD[d.getDay()] + '）</span></div><span class="time">' + m.start + ' – ' + m.end + '</span></div>' +
+      '<div class="vsgrid">' +
+        '<div class="side"><span class="emblem">' + esc(t.short) + '</span><span class="tname">' + esc(t.name) + '</span></div>' +
+        '<span class="bigvs">VS</span>' + right +
+      '</div>' +
+    '</section>' +
+    (mine ? '' : '<div class="chips"><span class="chip">対戦実績 ' + t.games + '試合</span><span class="chip">直前キャンセル ' + t.cancels + '回</span><span class="chip" style="background:var(--navy-t);border-color:var(--navy-t);color:var(--navy)">レベル：' + esc(t.level) + '</span></div>') +
+    '<section class="card rows" aria-label="試合情報">' +
+      '<div class="row">' + ic('pin') + '<div><div class="k">グラウンド</div><div class="v">' + (m.ground ? esc(m.ground) : '未定（相談して決めます）') + '</div>' + (m.ground ? '<div class="ok">確保済み</div>' : '') + '</div></div>' +
+      '<div class="row">' + ic('yen') + '<div><div class="k">費用</div><div class="v">グラウンド代は折半（1チーム 3,000円）</div></div></div>' +
+      '<div class="row">' + ic('clock') + '<div><div class="k">試合形式</div><div class="v">7回 または 2時間まで</div></div></div>' +
+      '<div class="row">' + ic('user') + '<div><div class="k">審判</div><div class="v">相互審判（イニングごとに交代）</div></div></div>' +
+      '<div class="row">' + ic('ball') + '<div><div class="k">ボール</div><div class="v">軟式M号・各チーム2球持参</div></div></div>' +
+    '</section>' +
+    (t.comment ? '<section class="card pad"><h2 class="h2" style="font-size:13px;color:var(--muted);margin-bottom:6px">相手チームからひとこと</h2><p class="quote">' + esc(t.comment) + '</p></section>' : '') +
+    '<div class="stack" style="margin-top:6px">' + cta + '</div>' +
+  '</div>';
+}
+
+/* ===== 画面：助っ人募集 ===== */
+function recruitButtons(r) {
+  var mine = isMineTeam(r.team), applied = S.appliedR[r.id];
+  var keys = r.pos.slice();
+  if (r.any) keys.push('ANY');
+  return keys.map(function (p) {
+    var label = p === 'ANY' ? 'どこでも可 ×' + r.any : POS[p].l + '募集';
+    if (mine) return '<span class="rbtn pub">' + label + '・公開中</span>';
+    if (applied) {
+      if (applied.pos === p) return '<span class="rbtn done">' + ic('check', 16, 2.6) + (p === 'ANY' ? 'ポジション不問' : POS[p].l) + 'に応募済み</span>';
+      return '<span class="rbtn off">' + label + '</span>';
+    }
+    var fit = p !== 'ANY' && S.user.positions.has(p);
+    return '<button type="button" class="rbtn" data-act="openApply" data-rid="' + r.id + '" data-pos="' + p + '">' + label + (fit ? '<span class="fit">守れる</span>' : '') + ic('chevR', 16, 2.4) + '</button>';
+  }).join('');
+}
+function recruitCard(r) {
+  var t = teamOf(r.team), mine = isMineTeam(r.team);
+  return '<article class="rcard">' +
+    '<div class="rtop"><span class="avatar">' + esc(t.short) + '</span>' +
+      '<div class="grow"><div class="rname ellipsis">' + esc(t.name) + '</div>' +
+      '<div class="rmeta">' + fmtShort(r.date) + ' <span class="t">' + esc(r.time) + '</span></div></div>' +
+      (mine ? '<span class="badge b-admin">あなたのチーム</span>' : levelBadge(t.level)) +
+    '</div>' +
+    '<div class="rinfo">' + ic('pin', 14) + '<span class="ellipsis">' + esc(r.ground) + '・参加費 ' + esc(r.fee) + '</span></div>' +
+    '<div class="rbtns">' + recruitButtons(r) + '</div>' +
+  '</article>';
+}
+function scrSukette() {
+  var all = allRecruits(), mineSet = S.user.positions;
+  var list = S.onlyMine ? all.filter(function (r) {
+    return !isMineTeam(r.team) && (r.any > 0 || r.pos.some(function (p) { return mineSet.has(p); }));
+  }) : all;
+  return '' +
+  '<header class="topbar"><div><p class="sub">' + all.length + 'チームが助っ人を募集中</p><h1 tabindex="-1">助っ人募集</h1></div>' +
+    '<button type="button" class="pill-out" data-act="gate" data-what="助っ人の募集" data-to="postSukette">' + ic('plus', 16, 2.4) + '募集する</button></header>' +
+  '<div class="filterbar">' +
+    '<button type="button" class="toggle" data-act="toggleMine" aria-pressed="' + S.onlyMine + '"><span class="track" aria-hidden="true"></span>守れるポジションの募集だけ表示</button>' +
+    '<p class="help">あなたが守れるポジション：' + posText(mineSet) + '</p>' +
+  '</div>' +
+  '<div class="list">' +
+    (list.length ? list.map(recruitCard).join('') : '<div class="empty"><b>条件に合う募集は今ありません</b><p class="help">守れるポジションを増やすと、表示される募集が増えます。</p></div>') +
+  '</div>';
+}
+
+/* ===== 画面：応募（球場で能力を選ぶ） ===== */
+function scrApply() {
+  var a = S.ap, r = findRecruit(a.rid), t = teamOf(r.team);
+  var isAny = a.pos === 'ANY';
+  var recLabel = isAny ? 'ポジション不問' : POS[a.pos].l;
+  var has = isAny ? a.sel.size > 0 : a.sel.has(a.pos);
+  var fitline = isAny
+    ? (a.sel.size ? '守れるポジション：' + posText(a.sel) + ' で応募します' : '守れるポジションを1つ以上選んでください')
+    : (has ? '✓ ' + recLabel + 'で応募します' : recLabel + 'が選ばれていません。このまま応募すると、ほかのポジションでの応募になります');
+  return backbar('応募する') +
+  '<div class="content">' +
+    '<section class="card pad stack">' +
+      '<div class="rtop"><span class="avatar">' + esc(t.short) + '</span><div class="grow"><div class="rname">' + esc(t.name) + '</div><div class="rmeta">' + fmtShort(r.date) + ' <span class="t">' + esc(r.time) + '</span></div></div>' + levelBadge(t.level) + '</div>' +
+      '<div class="rinfo">' + ic('pin', 14) + esc(r.ground) + '・参加費 ' + esc(r.fee) + '</div>' +
+    '</section>' +
+    '<div class="recbanner">' + ic('flag', 22) + '<div><b>' + recLabel + '</b> を募集しています</div></div>' +
+    '<section class="card pad stack">' +
+      '<div><h2 class="h2">あなたが守れるポジションをタップ</h2><p class="help">プロフィールの内容が入っています。タップで追加・解除できます。</p></div>' +
+      (isAny ? '' : '<div class="legend" aria-hidden="true"><span><i class="sw" style="background:#fff;border:2px dashed var(--orange)"></i>募集中</span><span><i class="sw" style="background:var(--navy)"></i>守れる</span><span><i class="sw" style="background:var(--orange)"></i>募集中で守れる</span></div>') +
+      fieldHTML('ap', a.sel, { rec: isAny ? null : a.pos }) +
+      '<p class="fitline ' + (has ? 'ok' : 'warn') + '" aria-live="polite">' + fitline + '</p>' +
+    '</section>' +
+    '<section class="card pad stack"><h2 class="h2">経験レベル</h2>' + segHTML('ap', LEVELS, a.level, '経験レベル') + '</section>' +
+    '<section class="card pad stack">' +
+      '<label class="lbl" for="ap-note">チームへのひとこと（任意）</label>' +
+      '<textarea id="ap-note" class="inp" rows="3" data-bind="ap.note" placeholder="例：高校まで軟式をやっていました。よろしくお願いします！">' + esc(a.note) + '</textarea>' +
+      '<label class="check"><input type="checkbox" data-bind="ap.save"' + (a.save ? ' checked' : '') + '>守れるポジションと経験レベルを、プロフィールにも保存する</label>' +
+    '</section>' +
+    '<button type="button" class="btn btn-primary" data-act="submitApply"' + (a.sel.size ? '' : ' disabled') + '>' + (a.sel.size ? '応募する' : 'ポジションを1つ以上選んでください') + '</button>' +
+    '<p class="help center">チームが承認すると、集合場所などの連絡が届きます。</p>' +
+  '</div>';
+}
+
+/* ===== 画面：マイページ ===== */
+var ADMIN_FEATURES = [
+  ['swords', '対戦の申し込み'],
+  ['cal', '対戦相手の募集'],
+  ['userPlus', '助っ人の募集'],
+  ['inbox', '届いた応募の承認']
+];
+function scrMypage() {
+  var u = S.user, a = S.admin;
+  var appliedList = Object.keys(S.appliedR).map(function (id) {
+    var r = findRecruit(id); if (!r) return '';
+    var ap = S.appliedR[id];
+    return '<li><span class="tag badge b-soft">承認待ち</span><b>' + esc(teamOf(r.team).name) + '</b><br>' + fmtShort(r.date) + ' ' + esc(r.time) + '・' + (ap.pos === 'ANY' ? 'ポジション不問' : POS[ap.pos].l) + 'で応募</li>';
+  }).join('');
+  var adminCard = a
+    ? '<section class="card pad stack">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h2 class="h2">チーム管理者</h2><span class="badge b-admin">管理者</span></div>' +
+        '<p style="margin:0;font-size:15px;font-weight:700">' + esc(a.team) + '</p>' +
+        '<ul class="unlock">' + ADMIN_FEATURES.map(function (f) { return '<li><span class="ic ok">' + ic('check', 16, 2.6) + '</span>' + f[1] + '</li>'; }).join('') + '</ul>' +
+        '<button type="button" class="btn btn-navy" data-act="tab" data-tab="team">チーム管理を開く</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-act="leaveAdmin" style="align-self:center">管理者をやめる（デモ用）</button>' +
+      '</section>'
+    : '<section class="card pad stack">' +
+        '<h2 class="h2">チーム管理者になる</h2>' +
+        '<p class="help">チームを登録すると、管理者だけが使える機能が増えます。今の個人の登録はそのまま使えます。</p>' +
+        '<ul class="unlock">' + ADMIN_FEATURES.map(function (f) { return '<li><span class="ic lk">' + ic('lock', 15) + '</span>' + f[1] + '<span class="help" style="margin-left:auto">管理者のみ</span></li>'; }).join('') + '</ul>' +
+        '<button type="button" class="btn btn-navy" data-act="openAdminReg">チーム管理者として登録する</button>' +
+      '</section>';
+  return '' +
+  '<header class="topbar"><div><p class="sub">プロフィールと権限</p><h1 tabindex="-1">マイページ</h1></div></header>' +
+  '<div class="content">' +
+    '<section class="card pad" style="display:flex;align-items:center;gap:14px">' +
+      '<span class="avatar lg">' + esc((u.name || 'ゲ').charAt(0)) + '</span>' +
+      '<div class="grow"><div style="font-size:18px;font-weight:900">' + esc(u.name || 'ゲスト') + '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><span class="badge b-soft">個人</span>' + (a ? '<span class="badge b-admin">' + esc(a.team) + ' 管理者</span>' : '') + '</div></div>' +
+    '</section>' +
+    '<section class="card pad stack">' +
+      '<h2 class="h2">守れるポジション</h2>' +
+      '<div style="display:flex;gap:14px;align-items:center">' + miniField(u.positions) +
+        '<div class="grow"><p style="margin:0;font-size:15px;font-weight:700">' + posText(u.positions) + '</p><p class="help" style="margin-top:4px">経験レベル：' + esc(u.level) + '</p></div></div>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-act="openPosEdit" style="align-self:flex-start">球場で編集する</button>' +
+    '</section>' +
+    adminCard +
+    '<h2 class="sectitle">応募中の助っ人</h2>' +
+    '<section class="card">' + (appliedList ? '<ul class="simple">' + appliedList + '</ul>' : '<p class="help pad">まだありません。「助っ人」タブから応募できます。</p>') + '</section>' +
+    '<button type="button" class="btn btn-ghost btn-sm" data-act="resetDemo" style="align-self:center;margin-top:8px">デモを最初からやり直す</button>' +
+  '</div>';
+}
+function scrPosEdit() {
+  var p = S.pe;
+  return backbar('守れるポジション') +
+  '<div class="content">' +
+    '<section class="card pad stack"><div><h2 class="h2">守れるポジションをタップ</h2><p class="help">いくつでも選べます。助っ人募集で「守れる」と表示されるようになります。</p></div>' +
+      fieldHTML('pe', p.sel) + '<p class="selsum">選択中：<b>' + posText(p.sel) + '</b></p></section>' +
+    '<section class="card pad stack"><h2 class="h2">経験レベル</h2>' + segHTML('pe', LEVELS, p.level, '経験レベル') + '</section>' +
+    '<button type="button" class="btn btn-navy" data-act="savePos"' + (p.sel.size ? '' : ' disabled') + '>' + (p.sel.size ? '保存する' : 'ポジションを1つ以上選んでください') + '</button>' +
+  '</div>';
+}
+
+/* ===== 画面：チーム管理者として登録 ===== */
+function scrAdminReg() {
+  var d = S.ad, e = d.err;
+  var body = d.mode === 'new'
+    ? teamFields('ad', d) +
+      '<section class="card pad stack"><div class="field-group"><label class="lbl" for="ad-home">ホームグラウンド（任意）</label>' +
+      '<input id="ad-home" class="inp" data-bind="ad.home" value="' + esc(d.home) + '" placeholder="例：中央公園グラウンド" maxlength="30"></div></section>'
+    : '<section class="card pad stack">' +
+        '<div class="field-group"><label class="lbl" for="ad-code">招待コード<span class="req">必須</span></label>' +
+        '<input id="ad-code" class="inp' + (e.code ? ' bad' : '') + '" data-bind="ad.code" value="' + esc(d.code) + '" placeholder="例：K7Q2XA" maxlength="6" autocapitalize="characters" autocomplete="off"' + (e.code ? ' aria-invalid="true" aria-describedby="ad-code-err"' : '') + '>' +
+        (e.code ? '<p class="err" id="ad-code-err">' + e.code + '</p>' : '') + '</div>' +
+        '<p class="help">すでに登録されているチームの管理者から、招待コードを受け取って入力します。（デモでは6文字なら通ります）</p>' +
+      '</section>';
+  return backbar('チーム管理者として登録') +
+  '<div class="content">' +
+    '<section class="card pad stack">' +
+      '<h2 class="h2">管理者になると増える機能</h2>' +
+      '<ul class="unlock">' + ADMIN_FEATURES.map(function (f) { return '<li><span class="ic lk" style="background:var(--navy-t);color:var(--navy)">' + ic(f[0], 16) + '</span>' + f[1] + '</li>'; }).join('') + '</ul>' +
+      '<p class="help">個人の登録（守れるポジションなど）はそのまま引き継がれます。</p>' +
+    '</section>' +
+    segHTML('adm', ['新しいチームを登録', '招待コードで参加'], d.mode === 'new' ? '新しいチームを登録' : '招待コードで参加', '登録方法') +
+    body +
+    '<button type="button" class="btn btn-navy" data-act="submitAdmin">管理者として登録する</button>' +
+  '</div>';
+}
+
+/* ===== 画面：チーム管理（管理者だけ） ===== */
+function scrTeam() {
+  var a = S.admin;
+  var pend = S.requests.filter(function (r) { return r.status === 'pending'; }).length;
+  var applied = Object.keys(S.appliedM).map(function (id) {
+    var m = findMatch(id); if (!m) return '';
+    return '<li><span class="tag badge b-soft">承認待ち</span>' + fmtShort(m.date) + ' ' + m.start + '〜<br><b>' + esc(a.team) + ' VS ' + esc(teamOf(m.team).name) + '</b></li>';
+  }).join('');
+  var pubs = S.myMatches.map(function (m) {
+    return '<li><span class="tag badge lv-mid">対戦相手募集</span>' + fmtShort(m.date) + ' ' + m.start + '〜・' + (m.ground ? esc(m.ground) : 'グラウンド未定') + '</li>';
+  }).concat(S.myRecruits.map(function (r) {
+    return '<li><span class="tag badge lv-hard">助っ人募集</span>' + fmtShort(r.date) + ' ' + esc(r.time) + '・' + r.pos.map(function (p) { return POS[p].l; }).concat(r.any ? ['不問' + r.any + '名'] : []).join('・') + '</li>';
+  })).join('');
+  return '' +
+  '<header class="topbar"><div><p class="sub">管理者だけが使えるページ</p><h1 tabindex="-1">チーム管理</h1></div></header>' +
+  '<div class="content">' +
+    '<section class="teamhero"><span class="emblem">' + esc(a.team.charAt(0)) + '</span><div class="grow"><div class="n">' + esc(a.team) + '</div><div class="s">' + esc(a.area) + '・' + esc(a.level) + '・管理者：' + esc(S.user.name || 'ゲスト') + '</div></div></section>' +
+    '<div class="menu">' +
+      '<button type="button" class="menuitem" data-act="go" data-to="postMatch"><span class="mi">' + ic('cal') + '</span><div class="grow"><b>対戦相手を募集する</b><span class="d">日時とグラウンドを決めて公開</span></div>' + ic('chevR') + '</button>' +
+      '<button type="button" class="menuitem" data-act="go" data-to="postSukette"><span class="mi">' + ic('userPlus') + '</span><div class="grow"><b>助っ人を募集する</b><span class="d">足りないポジションを球場でタップ</span></div>' + ic('chevR') + '</button>' +
+      '<button type="button" class="menuitem" data-act="go" data-to="requests"><span class="mi">' + ic('inbox') + '</span><div class="grow"><b>届いた応募</b><span class="d">助っ人の応募を承認・見送り</span></div>' + (pend ? '<span class="count">' + pend + '</span>' : '') + ic('chevR') + '</button>' +
+    '</div>' +
+    '<h2 class="sectitle">申し込み中の対戦</h2>' +
+    '<section class="card">' + (applied ? '<ul class="simple">' + applied + '</ul>' : '<p class="help pad">まだありません。「試合」タブから申し込めます。</p>') + '</section>' +
+    '<h2 class="sectitle">公開中の募集</h2>' +
+    '<section class="card">' + (pubs ? '<ul class="simple">' + pubs + '</ul>' : '<p class="help pad">まだありません。</p>') + '</section>' +
+  '</div>';
+}
+function dateOptions(extra) {
+  var list = WEEKENDS.slice(0, 16);
+  if (extra && list.indexOf(extra) < 0 && extra >= TODAY) list = [extra].concat(list).sort();
+  return list.map(function (k) { return { v: k, l: fmtMD(k) }; });
+}
+function scrPostMatch() {
+  var p = S.pm;
+  return backbar('対戦相手を募集する') +
+  '<div class="content">' +
+    '<section class="card pad stack">' +
+      '<div class="field-group"><label class="lbl" for="pm-date">日付</label>' + selectHTML('pm-date', 'pm.date', dateOptions(p.date), p.date) + '</div>' +
+      '<div class="field-group"><label class="lbl" for="pm-time">時間</label>' + selectHTML('pm-time', 'pm.time', TIMES.map(function (t, i) { return { v: String(i), l: t[0] + '〜' + t[1] }; }), p.time) + '</div>' +
+      '<div class="field-group"><label class="lbl" for="pm-ground">グラウンド</label>' + selectHTML('pm-ground', 'pm.ground', GROUNDS.concat([{ v: '', l: '未定（相手と相談して決める）' }]), p.ground) + '</div>' +
+      '<div class="field-group"><label class="lbl" for="pm-note">ひとこと（任意）</label><textarea id="pm-note" class="inp" rows="3" data-bind="pm.note" placeholder="例：初対戦のチームさん歓迎です！">' + esc(p.note) + '</textarea></div>' +
+    '</section>' +
+    '<p class="help">公開すると、カレンダーに「' + esc(S.admin.team) + ' VS ？」として表示されます。</p>' +
+    '<button type="button" class="btn btn-primary" data-act="submitPostMatch">募集を公開する</button>' +
+  '</div>';
+}
+function scrPostSukette() {
+  var p = S.ps, total = p.sel.size + p.any;
+  var labels = KEYS.filter(function (k) { return p.sel.has(k); }).map(function (k) { return POS[k].l; });
+  if (p.any) labels.push('ポジション不問' + p.any + '名');
+  return backbar('助っ人を募集する') +
+  '<div class="content">' +
+    '<section class="card pad stack">' +
+      '<div class="grid2">' +
+        '<div class="field-group"><label class="lbl" for="ps-date">日付</label>' + selectHTML('ps-date', 'ps.date', dateOptions(p.date), p.date) + '</div>' +
+        '<div class="field-group"><label class="lbl" for="ps-time">時間</label>' + selectHTML('ps-time', 'ps.time', TIMES.map(function (t) { return t[0] + '〜' + t[1]; }), p.time) + '</div>' +
+      '</div>' +
+      '<div class="field-group"><label class="lbl" for="ps-ground">グラウンド</label>' + selectHTML('ps-ground', 'ps.ground', GROUNDS, p.ground) + '</div>' +
+    '</section>' +
+    '<section class="card pad stack">' +
+      '<div><h2 class="h2">足りないポジションをタップ</h2><p class="help">もう一度タップで取り消せます。</p></div>' +
+      fieldHTML('ps', p.sel, { mode: 'post' }) +
+      '<div class="stepper"><div><div style="font-size:14px;font-weight:700">ポジション不問</div><div class="help">どこでも守れる人を募集</div></div>' +
+        '<div class="ctl"><button type="button" data-act="psAny" data-val="-1" aria-label="ポジション不問の人数を減らす">' + ic('minus', 18, 2.4) + '</button><output aria-live="polite">' + p.any + '名</output>' +
+        '<button type="button" data-act="psAny" data-val="1" aria-label="ポジション不問の人数を増やす">' + ic('plus', 18, 2.4) + '</button></div></div>' +
+      '<div class="summary" aria-live="polite">' + (total ? '募集 ' + total + '名：' + labels.join('・') : 'まだ募集するポジションがありません') + '</div>' +
+    '</section>' +
+    '<section class="card pad stack">' +
+      '<div class="field-group"><label class="lbl" for="ps-fee">参加費</label>' + selectHTML('ps-fee', 'ps.fee', ['無料', '500円', '1,000円'], p.fee) + '</div>' +
+      '<div class="field-group"><label class="lbl" for="ps-note">ひとこと（任意）</label><textarea id="ps-note" class="inp" rows="3" data-bind="ps.note" placeholder="例：経験は問いません。気軽にどうぞ！">' + esc(p.note) + '</textarea></div>' +
+    '</section>' +
+    '<button type="button" class="btn btn-primary" data-act="submitPostSukette"' + (total ? '' : ' disabled') + '>募集を公開する</button>' +
+  '</div>';
+}
+function scrRequests() {
+  return backbar('届いた応募') +
+  '<div class="content">' +
+    '<p class="help">助っ人募集に届いた応募です（デモデータ）。</p>' +
+    S.requests.map(function (q) {
+      var actions = q.status === 'pending'
+        ? '<div class="req-actions"><button type="button" class="btn btn-navy btn-sm" style="flex:1" data-act="reqDecide" data-id="' + q.id + '" data-val="ok">承認する</button><button type="button" class="btn btn-ghost btn-sm" style="flex:1" data-act="reqDecide" data-id="' + q.id + '" data-val="ng">見送る</button></div>'
+        : '<p class="fitline ' + (q.status === 'ok' ? 'ok' : 'warn') + '">' + (q.status === 'ok' ? '✓ 承認しました。本人に連絡が届きます' : '見送りました') + '</p>';
+      return '<section class="card pad stack">' +
+        '<div class="rtop"><span class="avatar">' + esc(q.name.charAt(0)) + '</span><div class="grow"><div class="rname">' + esc(q.name) + '</div><div class="help">' + POS[q.pos].l + 'に応募・経験：' + esc(q.level) + '</div></div></div>' +
+        '<div style="display:flex;gap:12px;align-items:center">' + miniField(new Set(q.can), null) + '<div class="grow"><div class="help">守れるポジション</div><div style="font-size:14px;font-weight:700">' + posText(new Set(q.can)) + '</div>' + (q.note ? '<p class="quote" style="font-size:13px;margin-top:6px">「' + esc(q.note) + '」</p>' : '') + '</div></div>' +
+        actions + '</section>';
+    }).join('') +
+  '</div>';
+}
+
+/* ===== 下のタブ ===== */
+function tabbar() {
+  var tabs = [['match', '試合', 'cal'], ['sukette', '助っ人', 'userPlus']];
+  if (S.admin) tabs.push(['team', 'チーム', 'shield']);
+  tabs.push(['mypage', 'マイページ', 'user']);
+  return '<nav class="tabbar" aria-label="メインメニュー" style="grid-template-columns:repeat(' + tabs.length + ',minmax(0,1fr))">' +
+    tabs.map(function (t) {
+      return '<button type="button" class="tab" data-act="tab" data-tab="' + t[0] + '"' + (S.screen === t[0] ? ' aria-current="page"' : '') + '>' + ic(t[2], 22) + t[1] +
+        (t[0] === 'team' && S.teamNew ? '<span class="new">NEW</span>' : '') + '</button>';
+    }).join('') + '</nav>';
+}
+
+/* ===== シート（申し込み制限・確認） ===== */
+function renderSheet() {
+  var root = document.getElementById('sheet-root');
+  if (!S.sheet) { root.innerHTML = ''; return; }
+  var html;
+  if (S.sheet.type === 'blocked') {
+    html = '<div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="sh-t" aria-describedby="sh-b">' +
+      '<div class="lockcircle">' + ic('lock', 26) + '</div>' +
+      '<h2 id="sh-t" class="sh-title">あなたはチーム管理者ではないため、' + S.sheet.what + 'ができません</h2>' +
+      '<p id="sh-b" class="sh-body">この操作は、チーム管理者として登録した人だけができます。管理者として登録すると、このまま続けられます。</p>' +
+      '<p class="help center">守れるポジションなど、個人の登録内容はそのまま引き継がれます。</p>' +
+      '<button type="button" class="btn btn-navy" data-act="toAdminReg">チーム管理者として登録する</button>' +
+      '<button type="button" class="btn btn-ghost" data-act="closeSheet">閉じる</button>' +
+    '</div>';
+  } else if (S.sheet.type === 'confirmMatch') {
+    var m = findMatch(S.matchId), t = teamOf(m.team);
+    html = '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t">' +
+      '<h2 id="sh-t" class="sh-title">対戦を申し込む</h2>' +
+      '<div class="matchup"><span>' + esc(S.admin.team) + '</span><span class="vs">VS</span><span>' + esc(t.name) + '</span></div>' +
+      '<p class="help center">' + fmtMD(m.date) + ' ' + m.start + '〜' + m.end + '</p>' +
+      '<label class="lbl" for="cm-msg">相手チームへのメッセージ（任意）</label>' +
+      '<textarea id="cm-msg" class="inp" rows="3" data-bind="cm.msg" placeholder="例：よろしくお願いします！当日はユニフォームで伺います。">' + esc(S.cm.msg) + '</textarea>' +
+      '<button type="button" class="btn btn-primary" data-act="confirmMatch">申し込む</button>' +
+      '<button type="button" class="btn btn-ghost" data-act="closeSheet">やめる</button>' +
+    '</div>';
+  }
+  root.innerHTML = '<div class="scrim" data-act="scrim">' + html + '</div>';
+  var f = root.querySelector('.sheet button');
+  if (f) f.focus();
+}
+
+/* ===== 描画 ===== */
+var SCREENS = {
+  onboard: scrOnboard, match: scrMatch, matchDetail: scrMatchDetail, sukette: scrSukette, apply: scrApply,
+  mypage: scrMypage, posEdit: scrPosEdit, adminReg: scrAdminReg,
+  team: scrTeam, postMatch: scrPostMatch, postSukette: scrPostSukette, requests: scrRequests
+};
+var TABS = ['match', 'sukette', 'team', 'mypage'];
+function render(focusSel) {
+  var app = document.getElementById('app');
+  var isTab = TABS.indexOf(S.screen) >= 0;
+  app.classList.toggle('no-tab', !isTab);
+  document.body.classList.toggle('no-tab', !isTab);
+  app.innerHTML = SCREENS[S.screen]() + (isTab ? tabbar() : '');
+  renderSheet();
+  renderToast();
+  if (S.top) {
+    window.scrollTo(0, 0);
+    var h = app.querySelector('h1');
+    if (h && !S.sheet) h.focus({ preventScroll: true });
+    S.top = false;
+  } else if (focusSel && !S.sheet) {
+    var el = app.querySelector(focusSel);
+    if (el) el.focus({ preventScroll: true });
+  }
+}
+var toastTimer;
+function toast(msg) {
+  S.toast = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { S.toast = null; renderToast(); }, 3000);
+}
+function renderToast() {
+  document.getElementById('toast-root').innerHTML = S.toast ? '<div class="toast">' + esc(S.toast) + '</div>' : '';
+}
+
+/* ===== 画面遷移 ===== */
+function go(screen) {
+  S.history.push({ screen: S.screen, matchId: S.matchId });
+  prep(screen);
+  S.screen = screen; S.top = true;
+}
+function back() {
+  var prev = S.history.pop();
+  S.returnTo = null;
+  if (prev) { S.screen = prev.screen; S.matchId = prev.matchId; } else { S.screen = 'match'; }
+  S.top = true;
+}
+function prep(screen) {
+  if (screen === 'postMatch') {
+    var d = S.selDate >= TODAY ? S.selDate : WEEKENDS[0];
+    S.pm = { date: d, time: '0', ground: GROUNDS[0], note: '' };
+  } else if (screen === 'postSukette') {
+    S.ps = { date: WEEKENDS[0], time: TIMES[1][0] + '〜' + TIMES[1][1], ground: GROUNDS[0], sel: new Set(['SS']), any: 0, fee: '500円', note: '' };
+  } else if (screen === 'adminReg') {
+    S.ad = { mode: 'new', teamName: '', area: '広島市西区', tlevel: '中級', home: '', code: '', err: {} };
+  } else if (screen === 'posEdit') {
+    S.pe = { sel: new Set(S.user.positions), level: S.user.level };
+  }
+}
+function ctxSet(ctx) { return { ob: S.ob.sel, ap: S.ap && S.ap.sel, pe: S.pe && S.pe.sel, ps: S.ps && S.ps.sel }[ctx]; }
+
+/* ===== 操作 ===== */
+var ACTIONS = {
+  tab: function (d) {
+    S.screen = d.tab; S.history = []; S.returnTo = null; S.top = true;
+    if (d.tab === 'team') S.teamNew = false;
+  },
+  back: function () { back(); },
+  go: function (d) { go(d.to); },
+  calMove: function (d) {
+    var n = S.cal.y * 12 + S.cal.m + Number(d.val);
+    S.cal = { y: Math.floor(n / 12), m: n % 12 };
+  },
+  pickDay: function (d) { S.selDate = d.date; return '[data-act="pickDay"][data-date="' + d.date + '"]'; },
+  openMatch: function (d) { S.matchId = d.id; go('matchDetail'); },
+  gate: function (d) {
+    if (S.admin) { go(d.to); return; }
+    S.sheet = { type: 'blocked', what: d.what, next: { type: 'go', to: d.to } };
+  },
+  applyMatch: function () {
+    if (!S.admin) { S.sheet = { type: 'blocked', what: '申し込み', next: { type: 'sheet', sheet: 'confirmMatch' } }; return; }
+    S.cm = { msg: '' };
+    S.sheet = { type: 'confirmMatch' };
+  },
+  confirmMatch: function () {
+    S.appliedM[S.matchId] = { msg: S.cm.msg };
+    S.sheet = null;
+    toast('対戦を申し込みました。相手チームの承認を待ちましょう');
+  },
+  cancelMatch: function () { delete S.appliedM[S.matchId]; toast('申し込みを取り消しました'); },
+  closeSheet: function () { S.sheet = null; },
+  scrim: function (d, el, e) { if (e.target === el) S.sheet = null; else return false; },
+  toAdminReg: function () {
+    S.returnTo = { screen: S.screen, history: S.history.slice(), matchId: S.matchId, next: S.sheet && S.sheet.next };
+    var keep = S.returnTo;
+    S.sheet = null;
+    go('adminReg');
+    S.returnTo = keep;
+  },
+  openAdminReg: function () { S.returnTo = null; go('adminReg'); },
+  openApply: function (d) {
+    S.ap = { rid: d.rid, pos: d.pos, sel: new Set(S.user.positions), level: S.user.level, note: '', save: true };
+    go('apply');
+  },
+  togglePos: function (d) {
+    var set = ctxSet(d.ctx);
+    if (set.has(d.pos)) set.delete(d.pos); else set.add(d.pos);
+    if (d.ctx === 'ob') S.ob.err.pos = null;
+    return '[data-act="togglePos"][data-ctx="' + d.ctx + '"][data-pos="' + d.pos + '"]';
+  },
+  seg: function (d) {
+    var v = d.val;
+    if (d.ctx === 'ob') S.ob.level = v;
+    else if (d.ctx === 'obt') S.ob.tlevel = v;
+    else if (d.ctx === 'ap') S.ap.level = v;
+    else if (d.ctx === 'pe') S.pe.level = v;
+    else if (d.ctx === 'adt') S.ad.tlevel = v;
+    else if (d.ctx === 'adm') { S.ad.mode = v === '新しいチームを登録' ? 'new' : 'invite'; S.ad.err = {}; }
+    return '[data-act="seg"][data-ctx="' + d.ctx + '"][data-val="' + v + '"]';
+  },
+  toggleMine: function () { S.onlyMine = !S.onlyMine; return '[data-act="toggleMine"]'; },
+  submitApply: function () {
+    var a = S.ap;
+    if (!a.sel.size) return;
+    S.appliedR[a.rid] = { pos: a.pos, can: Array.from(a.sel), level: a.level, note: a.note };
+    if (a.save) { S.user.positions = new Set(a.sel); S.user.level = a.level; }
+    back();
+    toast((a.pos === 'ANY' ? 'ポジション不問の募集' : POS[a.pos].l) + 'に応募しました');
+  },
+  submitOnboard: function () {
+    var o = S.ob, err = {};
+    if (!o.name.trim()) err.name = 'ニックネームを入力してください';
+    if (!o.sel.size) err.pos = '守れるポジションを1つ以上選んでください';
+    if (o.role === 'admin' && !o.teamName.trim()) err.teamName = 'チーム名を入力してください';
+    o.err = err;
+    if (Object.keys(err).length) {
+      return err.name ? '#ob-name' : err.pos ? '[data-ctx="ob"]' : '#ob-tname';
+    }
+    S.user = { name: o.name.trim(), positions: new Set(o.sel), level: o.level };
+    if (o.role === 'admin') {
+      S.admin = { teamId: '__mine', team: o.teamName.trim(), area: o.area, level: o.tlevel, via: 'new' };
+    }
+    S.screen = 'match'; S.history = []; S.top = true;
+    toast(S.admin ? '登録しました。チーム管理者の機能も使えます' : '登録しました。管理者はあとからマイページで追加できます');
+  },
+  submitAdmin: function () {
+    var d = S.ad, err = {};
+    if (d.mode === 'new' && !d.teamName.trim()) err.teamName = 'チーム名を入力してください';
+    if (d.mode === 'invite' && d.code.trim().length !== 6) err.code = '6文字の招待コードを入力してください';
+    d.err = err;
+    if (Object.keys(err).length) return d.mode === 'new' ? '#ad-tname' : '#ad-code';
+    if (d.mode === 'new') {
+      S.admin = { teamId: '__mine', team: d.teamName.trim(), area: d.area, level: d.tlevel, home: d.home, via: 'new' };
+    } else {
+      S.admin = { teamId: 'kabe', team: TEAMS.kabe.name, area: '広島市安佐北区', level: TEAMS.kabe.level, via: 'invite' };
+    }
+    S.teamNew = true;
+    var r = S.returnTo;
+    S.returnTo = null;
+    if (r) {
+      S.screen = r.screen; S.history = r.history; S.matchId = r.matchId; S.top = true;
+      if (r.next && r.next.type === 'sheet') {
+        if (isMineTeam(findMatch(S.matchId).team)) { toast('チーム管理者になりました'); return; }
+        S.cm = { msg: '' };
+        S.sheet = { type: r.next.sheet };
+      } else if (r.next && r.next.type === 'go') {
+        go(r.next.to);
+      }
+      toast('チーム管理者になりました。このまま続けられます');
+    } else {
+      S.screen = 'team'; S.history = []; S.top = true; S.teamNew = false;
+      toast('チーム管理者になりました。「チーム」タブが増えました');
+    }
+  },
+  leaveAdmin: function () {
+    S.admin = null; S.myMatches = []; S.myRecruits = []; S.appliedM = {};
+    S.screen = 'mypage'; S.top = true;
+    toast('管理者をやめました（個人の登録は残っています）');
+  },
+  resetDemo: function () { S = initState(); S.top = true; },
+  openPosEdit: function () { go('posEdit'); },
+  savePos: function () {
+    S.user.positions = new Set(S.pe.sel); S.user.level = S.pe.level;
+    back(); toast('守れるポジションを保存しました');
+  },
+  psAny: function (d) {
+    S.ps.any = Math.max(0, Math.min(9, S.ps.any + Number(d.val)));
+    return '[data-act="psAny"][data-val="' + d.val + '"]';
+  },
+  submitPostMatch: function () {
+    var p = S.pm, t = TIMES[Number(p.time)];
+    S.myMatches.push({ id: 'my' + S.myMatches.length, date: p.date, start: t[0], end: t[1], team: S.admin.teamId === '__mine' ? '__mine' : S.admin.teamId, ground: p.ground || null });
+    S.selDate = p.date;
+    var pd = parse(p.date); S.cal = { y: pd.getFullYear(), m: pd.getMonth() };
+    back();
+    toast('対戦相手の募集を公開しました（カレンダーに表示されます）');
+  },
+  submitPostSukette: function () {
+    var p = S.ps;
+    if (!p.sel.size && !p.any) return;
+    S.myRecruits.push({ id: 'mr' + S.myRecruits.length, team: S.admin.teamId, pos: KEYS.filter(function (k) { return p.sel.has(k); }), any: p.any, date: p.date, time: p.time, ground: p.ground, fee: p.fee });
+    back();
+    toast('助っ人募集を公開しました（「助っ人」タブに表示されます）');
+  },
+  reqDecide: function (d) {
+    S.requests.forEach(function (q) { if (q.id === d.id) q.status = d.val; });
+  }
+};
+
+document.addEventListener('click', function (e) {
+  var el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  var fn = ACTIONS[el.dataset.act];
+  if (!fn) return;
+  var res = fn(el.dataset, el, e);
+  if (res === false) return;
+  render(typeof res === 'string' ? res : null);
+});
+function onBind(e) {
+  var el = e.target, b = el.dataset && el.dataset.bind;
+  if (!b) return;
+  if (el.type === 'radio' && !el.checked) return;
+  var parts = b.split('.');
+  var obj = S[parts[0]];
+  if (!obj) return;
+  obj[parts[1]] = el.type === 'checkbox' ? el.checked : el.value;
+  if (el.dataset.rerender && e.type === 'change') render('input[name="' + el.name + '"][value="' + el.value + '"]');
+}
+document.addEventListener('input', onBind);
+document.addEventListener('change', onBind);
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && S.sheet) { S.sheet = null; render(); }
+});
+
+S = initState();
+render();
+})();
+</script>
+</body>
+</html>
